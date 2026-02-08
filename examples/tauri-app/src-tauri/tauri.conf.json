@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.10.0",
+  "productName": "Raw Mouse Plugin Example",
+  "version": "0.1.0",
+  "identifier": "com.tauri.raw-mouse-example",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devUrl": "http://localhost:1430",
+    "frontendDist": "../src"
+  },
+  "app": {
+    "security": {
+      "capabilities": [
+        {
+          "identifier": "default",
+          "description": "Enable event listening and emitting",
+          "permissions": [
+            "core:event:default"
+          ],
+          "windows": ["main"]
+        }
+      ],
+      "csp": null
+    },
+    "windows": [
+      {
+        "title": "Raw Mouse Plugin Example",
+        "width": 600,
+        "height": 400,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  },
+  "bundle": {},
+  "plugins": {}
+}

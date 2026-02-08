@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw Mouse Plugin Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            color: #667eea;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .btn-start {
+            background: #48bb78;
+            color: white;
+        }
+        .btn-start:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+        }
+        .btn-stop {
+            background: #f56565;
+            color: white;
+        }
+        .btn-stop:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+        }
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .status.listening {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status.stopped {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .coordinates-display {
+            background: #f7fafc;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .coordinates-label {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .mode-toggle {
+            display: inline-flex;
+            background: #edf2f7;
+            border-radius: 6px;
+            padding: 4px;
+            gap: 4px;
+            margin-left: 12px;
+        }
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+            color: #718096;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .mode-btn:hover {
+            background: #cbd5e0;
+        }
+        .mode-btn.active:hover {
+            background: #5568d3;
+        }
+        .coordinates-values {
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            line-height: 1.4;
+        }
+        .coordinate-x, .coordinate-y {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        .info-text {
+            font-size: 13px;
+            color: #a0aec0;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖱️ Raw Mouse Plugin Example</h1>
+        
+        <div class="status stopped" id="status">
+            Status: <span id="status-text">Stopped</span>
+        </div>
+
+        <div class="controls">
+            <button class="btn-start" onclick="startListening()">Start Listening</button>
+            <button class="btn-stop" onclick="stopListening()">Stop Listening</button>
+        </div>
+
+        <div class="coordinates-display">
+            <div class="coordinates-label">
+                Current Mouse Position
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="mode-relative">Relative</button>
+                    <button class="mode-btn" id="mode-absolute">Absolute</button>
+                </div>
+            </div>
+            <div class="coordinates-values">
+                <div class="coordinate-x">X: <span id="coord-x">0</span></div>
+                <div class="coordinate-y">Y: <span id="coord-y">0</span></div>
+            </div>
+            <div class="info-text" id="mode-info">Relative mode - values are deltas from raw input</div>
+        </div>
+    </div>
+
+    <script>
+        // Global state for coordinate display
+        let lastX = 0;
+        let lastY = 0;
+        let currentMode = 'relative';
+
+        function updateCoordinates(x, y) {
+            if (currentMode === 'relative') {
+                // Accumulate deltas into a running position
+                lastX += x;
+                lastY += y;
+            } else {
+                // Absolute mode - use values directly
+                lastX = x;
+                lastY = y;
+            }
+            document.getElementById('coord-x').textContent = lastX;
+            document.getElementById('coord-y').textContent = lastY;
+        }
+
+        function addEvent(event) {
+            // Only process MouseMove events to update coordinates
+            if (event.kind === 'MouseMove') {
+                const pos = event.value;
+                updateCoordinates(pos.x, pos.y);
+            }
+        }
+
+        // Make addEvent globally available for main.ts
+        window.addEvent = addEvent;
+        
+        // Expose currentMode so main.ts can update it
+        window.setCurrentMode = (mode) => {
+            currentMode = mode;
+        };
+        
+        // Wait for DOM and module to be ready, then attach button listeners
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            document.getElementById('mode-relative')?.addEventListener('click', () => {
+              if (window.setMode) window.setMode('relative')
+              else console.error('setMode not available')
+            })
+            document.getElementById('mode-absolute')?.addEventListener('click', () => {
+              if (window.setMode) window.setMode('absolute')
+              else console.error('setMode not available')
+            })
+          }, 100)
+        })
+    </script>
+    <script type="module" src="/main.ts"></script>
+</body>
+</html>

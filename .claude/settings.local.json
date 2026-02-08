@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo build:*)",
+      "Bash(pnpm tauri dev:*)"
+    ]
+  }
+}
