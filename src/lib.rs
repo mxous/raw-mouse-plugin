@@ -29,8 +29,6 @@ pub struct DeviceEvent {
 
 #[cfg(windows)]
 pub use windows::{start_raw_input, stop_raw_input};
-#[cfg(windows)]
-pub use windows::{get_mouse_position, set_tracking_mode, get_tracking_mode};
 
 // Provide placeholders for other platforms (compile when features are enabled)
 #[cfg(any(feature = "linux-evdev", feature = "linux-libinput"))]

@@ -5,19 +5,16 @@ edition = "2021"
 
 [features]
 default = []
-windows = []
 linux-evdev = []
 linux-libinput = []
 x11 = []
 macos-cgevent = []
 macos-iohid = []
-absolute = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 once_cell = "1.18"
-cfg-if = "1.0"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.48.0", features = ["Win32_Foundation", "Win32_UI_Input", "Win32_UI_WindowsAndMessaging"] }

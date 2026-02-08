@@ -1,52 +1,61 @@
 # raw-mouse-plugin
 
-A small Rust crate providing cross-platform mouse tracking (relative and optional absolute) designed for Tauri apps.
+A Rust library crate providing cross-platform raw mouse input capture for Tauri 2 applications. The plugin operates in relative mode only, emitting raw dx/dy deltas from the OS input system.
 
-Features:
-- Windows raw input (feature `windows`) — ports existing raw input implementation.
-- Linux: planned `libinput`/`evdev` backends (feature gated).
-- macOS: planned `CGEventTap` backend (feature gated).
-- Optional `absolute` feature to wrap `rdev`.
+Currently only the Windows implementation is complete; Linux and macOS modules are stubs with planned backends.
 
-Quick usage (in a Tauri app `src-tauri/Cargo.toml`):
+## Features
 
-Add as a path dependency:
+- **Windows** — Raw Input API via `WH_GETMESSAGE` hook, emitting relative mouse deltas.
+- **Linux** — Planned `libinput`/`evdev` backends (feature gated, currently stubs).
+- **macOS** — Planned `CGEventTap` backend (feature gated, currently stub).
+
+## Quick Usage
+
+Add as a dependency in your Tauri app's `src-tauri/Cargo.toml`:
 
 ```toml
 [dependencies]
-raw-mouse-plugin = { path = "../../raw-mouse-plugin", version = "0.1", features = ["windows"] }
+raw-mouse-plugin = { path = "../../raw-mouse-plugin", version = "0.1" }
 ```
 
-In your Tauri backend (example `src-tauri/src/lib.rs`):
+In your Tauri backend (`src-tauri/src/lib.rs`):
 
 ```rust
-use raw_mouse_plugin::{start_raw_input, stop_raw_input, set_rumble_value};
+use raw_mouse_plugin::{start_raw_input, stop_raw_input};
 
 // include in the invoke handler
 .invoke_handler(generate_handler![
     start_raw_input,
     stop_raw_input,
-    set_rumble_value,
-    // ...other handlers
 ])
 ```
 
-The plugin emits the same `device-changed` event payload as the original implementation, so no frontend changes should be required.
+The plugin emits `device-changed` events with a `DeviceEvent` payload:
 
-Permissions & platform notes
---
-
-- Linux (evdev/libinput): capturing raw device events typically requires read access to `/dev/input/event*`. Provide a udev rule to grant your user access, for example:
-
-```ini
-# /etc/udev/rules.d/99-raw-mouse.rules
-KERNEL=="event*", SUBSYSTEM=="input", ATTRS{name}=="Your Device Name", MODE="0660", GROUP="input"
+```json
+{ "kind": "MouseMove", "value": { "x": <dx>, "y": <dy> } }
 ```
 
-You may need to add your user to the `input` group or run the app with elevated privileges for raw `evdev` access. When running under Wayland, many compositors do not allow clients to open input devices directly — prefer `libinput` integration where possible.
+Listen for these events on the frontend via Tauri's `listen()` API.
 
-- macOS (CGEventTap / IOHID): global event taps require Accessibility permission. The user must allow the app under System Settings → Privacy & Security → Accessibility. When distributing a signed app, ensure code-signing and proper entitlements for capturing global events.
+## API
 
-- Windows (Raw Input): no extra privileges are required for registering raw input devices with `RIDEV_INPUTSINK`, but the plugin must correctly register/unregister hooks to avoid resource leaks.
+| Command | Description |
+|---------|-------------|
+| `start_raw_input` | Registers raw input devices and installs the hook. Begins emitting `device-changed` events with relative mouse deltas. |
+| `stop_raw_input` | Uninstalls the hook and stops emitting events. |
 
-Documentation and examples in this repository will show how to enable the platform-specific feature flags and how to set up the required permissions on each OS.
+## Platform Notes
+
+- **Windows (Raw Input):** No extra privileges required. The plugin registers `RAWINPUTDEVICE` with `RIDEV_INPUTSINK` and hooks the main window's thread.
+- **Linux (evdev/libinput):** Capturing raw device events typically requires read access to `/dev/input/event*`. A udev rule or `input` group membership may be needed. Under Wayland, prefer `libinput` integration.
+- **macOS (CGEventTap / IOHID):** Global event taps require Accessibility permission under System Settings > Privacy & Security > Accessibility.
+
+## Example App
+
+See `examples/tauri-app/` for a minimal Tauri 2 app demonstrating the plugin. It displays accumulated relative mouse deltas in real time.
+
+```bash
+cd examples/tauri-app && pnpm install && pnpm dev
+```

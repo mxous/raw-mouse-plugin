@@ -14,23 +14,15 @@ use crate::{DeviceEvent, DeviceEventKind};
 
 static IS_LISTENING: AtomicBool = AtomicBool::new(false);
 
-#[derive(Clone, Copy, Debug)]
-enum TrackingMode {
-    Relative,
-    Absolute,
-}
-
 struct PluginState {
     app: Option<AppHandle<Wry>>,
     hook: Option<HHOOK>,
-    tracking_mode: TrackingMode,
 }
 
 static STATE: Lazy<Mutex<PluginState>> = Lazy::new(|| {
     Mutex::new(PluginState {
         app: None,
         hook: None,
-        tracking_mode: TrackingMode::Relative,
     })
 });
 
@@ -42,72 +34,14 @@ pub fn start_raw_input(app: AppHandle<Wry>) -> std::result::Result<(), String> {
 
     IS_LISTENING.store(true, Ordering::SeqCst);
 
-    let mode = {
+    {
         let mut s = STATE.lock().map_err(|e| e.to_string())?;
         s.app = Some(app.clone());
-        s.tracking_mode
-    };
-
-    // Only install the hook in relative mode; absolute mode uses polling
-    if matches!(mode, TrackingMode::Relative) {
-        unsafe { install_hook(&app).map_err(|e| format!("install_hook failed: {:?}", e))?; }
     }
+
+    unsafe { install_hook(&app).map_err(|e| format!("install_hook failed: {:?}", e))?; }
 
     Ok(())
-}
-
-#[command]
-pub fn get_mouse_position() -> std::result::Result<(i32, i32), String> {
-    let mut pt = POINT { x: 0, y: 0 };
-    unsafe {
-        if !GetCursorPos(&mut pt).as_bool() {
-            return Err("GetCursorPos failed".to_string());
-        }
-    }
-    Ok((pt.x, pt.y))
-}
-
-#[command]
-pub fn set_tracking_mode(mode: String) -> std::result::Result<(), String> {
-    let tracking_mode = match mode.as_str() {
-        "relative" => TrackingMode::Relative,
-        "absolute" => TrackingMode::Absolute,
-        _ => return Err("Invalid tracking mode. Use 'relative' or 'absolute'".to_string()),
-    };
-
-    let mut s = STATE.lock().map_err(|e| e.to_string())?;
-    let old_mode = s.tracking_mode;
-    s.tracking_mode = tracking_mode;
-    eprintln!("Tracking mode set to: {:?}", tracking_mode);
-
-    // Manage hook lifecycle when switching modes while listening
-    if IS_LISTENING.load(Ordering::SeqCst) {
-        match (old_mode, tracking_mode) {
-            (TrackingMode::Relative, TrackingMode::Absolute) => {
-                unsafe { uninstall_hook(&mut s); }
-            },
-            (TrackingMode::Absolute, TrackingMode::Relative) => {
-                let app = s.app.clone();
-                drop(s);
-                if let Some(app_handle) = app {
-                    unsafe { install_hook(&app_handle).map_err(|e| format!("Failed to install hook: {:?}", e))?; }
-                }
-            },
-            _ => {},
-        }
-    }
-
-    Ok(())
-}
-
-#[command]
-pub fn get_tracking_mode() -> std::result::Result<String, String> {
-    let s = STATE.lock().map_err(|e| e.to_string())?;
-    let mode_str = match s.tracking_mode {
-        TrackingMode::Relative => "relative",
-        TrackingMode::Absolute => "absolute",
-    };
-    Ok(mode_str.to_string())
 }
 
 #[command]
@@ -135,16 +69,13 @@ unsafe extern "system" fn window_hook_proc(
         if msg.message == WM_INPUT && IS_LISTENING.load(Ordering::SeqCst) {
             let hrawinput = HRAWINPUT(msg.lParam.0 as isize);
 
-            let (app_opt, mode) = {
+            let app_opt = {
                 let s = STATE.lock().unwrap();
-                (s.app.clone(), s.tracking_mode)
+                s.app.clone()
             };
 
-            // Only emit from the hook in relative mode; absolute mode uses polling
-            if matches!(mode, TrackingMode::Relative) {
-                if let Some(app) = app_opt {
-                    handle_raw_input(hrawinput, &app);
-                }
+            if let Some(app) = app_opt {
+                handle_raw_input(hrawinput, &app);
             }
         }
     }

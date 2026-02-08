@@ -89,35 +89,6 @@
             margin-bottom: 12px;
             font-weight: 500;
         }
-        .mode-toggle {
-            display: inline-flex;
-            background: #edf2f7;
-            border-radius: 6px;
-            padding: 4px;
-            gap: 4px;
-            margin-left: 12px;
-        }
-        .mode-btn {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background: transparent;
-            color: #718096;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .mode-btn.active {
-            background: #667eea;
-            color: white;
-        }
-        .mode-btn:hover {
-            background: #cbd5e0;
-        }
-        .mode-btn.active:hover {
-            background: #5568d3;
-        }
         .coordinates-values {
             font-family: 'Courier New', monospace;
             font-size: 32px;
@@ -138,8 +109,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🖱️ Raw Mouse Plugin Example</h1>
-        
+        <h1>Raw Mouse Plugin Example</h1>
+
         <div class="status stopped" id="status">
             Status: <span id="status-text">Stopped</span>
         </div>
@@ -150,70 +121,34 @@
         </div>
 
         <div class="coordinates-display">
-            <div class="coordinates-label">
-                Current Mouse Position
-                <div class="mode-toggle">
-                    <button class="mode-btn active" id="mode-relative">Relative</button>
-                    <button class="mode-btn" id="mode-absolute">Absolute</button>
-                </div>
-            </div>
+            <div class="coordinates-label">Mouse Delta (Relative)</div>
             <div class="coordinates-values">
                 <div class="coordinate-x">X: <span id="coord-x">0</span></div>
                 <div class="coordinate-y">Y: <span id="coord-y">0</span></div>
             </div>
-            <div class="info-text" id="mode-info">Relative mode - values are deltas from raw input</div>
+            <div class="info-text">Values are accumulated deltas from raw input</div>
         </div>
     </div>
 
     <script>
-        // Global state for coordinate display
         let lastX = 0;
         let lastY = 0;
-        let currentMode = 'relative';
 
         function updateCoordinates(x, y) {
-            if (currentMode === 'relative') {
-                // Accumulate deltas into a running position
-                lastX += x;
-                lastY += y;
-            } else {
-                // Absolute mode - use values directly
-                lastX = x;
-                lastY = y;
-            }
+            lastX += x;
+            lastY += y;
             document.getElementById('coord-x').textContent = lastX;
             document.getElementById('coord-y').textContent = lastY;
         }
 
         function addEvent(event) {
-            // Only process MouseMove events to update coordinates
             if (event.kind === 'MouseMove') {
                 const pos = event.value;
                 updateCoordinates(pos.x, pos.y);
             }
         }
 
-        // Make addEvent globally available for main.ts
         window.addEvent = addEvent;
-        
-        // Expose currentMode so main.ts can update it
-        window.setCurrentMode = (mode) => {
-            currentMode = mode;
-        };
-        
-        // Wait for DOM and module to be ready, then attach button listeners
-        document.addEventListener('DOMContentLoaded', () => {
-          setTimeout(() => {
-            document.getElementById('mode-relative')?.addEventListener('click', () => {
-              if (window.setMode) window.setMode('relative')
-              else console.error('setMode not available')
-            })
-            document.getElementById('mode-absolute')?.addEventListener('click', () => {
-              if (window.setMode) window.setMode('absolute')
-              else console.error('setMode not available')
-            })
-          }, 100)
-        })
     </script>
     <script type="module" src="/main.ts"></script>
 </body>
