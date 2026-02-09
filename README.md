@@ -34,7 +34,7 @@ use raw_mouse_plugin::{start_raw_input, stop_raw_input};
 The plugin emits `device-changed` events with a `DeviceEvent` payload:
 
 ```json
-{ "kind": "MouseMove", "value": { "x": <dx>, "y": <dy> } }
+{ "kind": "MouseMove", "value": { "x": dx, "y": dy } }
 ```
 
 Listen for these events on the frontend via Tauri's `listen()` API.
