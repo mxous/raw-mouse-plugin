@@ -1,6 +1,6 @@
 # Raw Mouse Plugin Example App
 
-A minimal Tauri 2 application demonstrating the raw-mouse-plugin on Windows.
+A minimal Tauri 2 application demonstrating the raw-mouse-plugin on Windows and Linux.
 
 ## Running the example
 
@@ -10,6 +10,13 @@ From the repo root:
 cd examples/tauri-app
 pnpm install
 pnpm dev
+```
+
+On Linux, the Tauri webview requires the X11 GDK backend and a DMABUF workaround:
+
+```bash
+cd examples/tauri-app
+GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 pnpm dev
 ```
 
 ## How it works
@@ -23,7 +30,7 @@ pnpm dev
 1. Add the crate as a path dependency in your Tauri `src-tauri/Cargo.toml`:
 
 ```toml
-raw-mouse-plugin = { path = "../../raw-mouse-plugin", version = "0.1", features = ["windows"] }
+raw-mouse-plugin = { path = "../../raw-mouse-plugin", version = "0.1" }
 ```
 
 2. Add plugin commands to your `generate_handler!` list in `src-tauri/src/lib.rs`:
@@ -44,3 +51,5 @@ use raw_mouse_plugin::{start_raw_input, stop_raw_input};
 - If you get a "command not found" error, ensure the plugin path in `Cargo.toml` is correct.
 - If no events appear after clicking Start, check the browser console (F12) for errors.
 - Ensure your Tauri environment is set up correctly (Node.js, Rust toolchain, etc.).
+- **Linux:** If the app crashes or shows a blank window, make sure you're running with `GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+- **Linux:** If no mouse devices are found, ensure your user is in the `input` group: `sudo usermod -aG input $USER` (then log out and back in).

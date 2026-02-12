@@ -3,7 +3,7 @@
 #[cfg(windows)]
 pub mod windows;
 
-#[cfg(any(feature = "linux-evdev", feature = "linux-libinput", target_os = "linux"))]
+#[cfg(target_os = "linux")]
 pub mod linux;
 
 #[cfg(any(feature = "macos-cgevent", target_os = "macos"))]
@@ -30,8 +30,7 @@ pub struct DeviceEvent {
 #[cfg(windows)]
 pub use windows::{start_raw_input, stop_raw_input};
 
-// Provide placeholders for other platforms (compile when features are enabled)
-#[cfg(any(feature = "linux-evdev", feature = "linux-libinput"))]
+#[cfg(target_os = "linux")]
 pub use linux::{start_raw_input, stop_raw_input};
 
 #[cfg(feature = "macos-cgevent")]

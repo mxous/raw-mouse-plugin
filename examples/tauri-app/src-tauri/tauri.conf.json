@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.tauri.raw-mouse-example",
   "build": {
-    "beforeDevCommand": "",
-    "beforeBuildCommand": "",
+    "beforeDevCommand": "pnpm vite --port 1430",
+    "beforeBuildCommand": "pnpm vite build",
     "devUrl": "http://localhost:1430",
     "frontendDist": "../src"
   },
@@ -16,7 +16,7 @@
           "identifier": "default",
           "description": "Enable event listening and emitting",
           "permissions": [
-            "core:event:default"
+            "core:default"
           ],
           "windows": ["main"]
         }
